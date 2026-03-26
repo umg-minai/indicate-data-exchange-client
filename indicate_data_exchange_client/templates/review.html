@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review — INDICATE Data Exchange </title>
+    <link rel="icon" type="image/svg" href="/static/favicon.svg"/>
+    <!-- SimpleDataTables -->
+    <link rel="stylesheet" type="text/css" href="/static/SimpleDataTables.css"/>
+    <!-- Our style and script -->
+    <link rel="stylesheet" type="text/css" href="/static/style.css"/>
+    <script type="text/javascript" src="/static/review.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">Quality Indicator Results Upload — Review & Confirmation</h1>
+
+        <div class="content">
+            {% if data %}
+                <div id="statusMessage" class="status-message hidden"></div>
+            {% else %}
+                <div id="statusMessage" class="status-message success">
+                    No results are queued for review and upload. The next execution of the CQL engine will produce and queue new results.
+                </div>
+            {% endif %}
+
+            <div class="info-box-container">
+                <div class="info-box-column config-column">
+                    <h2 style="margin-bottom: 15px;">Configuration</h2>
+                    <div class="info-section">
+                        <div class="info-row">
+                            <strong>Provider ID:</strong>
+                            <span>{{ provider_id }}</span>
+                        </div>
+                        <div class="info-row">
+                            <strong>Data Exchange Endpoint:</strong>
+                            <span>{{ data_exchange_endpoint }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if data %}
+                    <div class="info-box-column summary-column">
+                        <h2 style="margin-bottom: 15px;">Summary</h2>
+                        <div class="info-section">
+                            <div class="info-row">
+                                <strong>Results computed</strong>
+                                <span>{{ data.computed_at }}</span>
+                            </div>
+                            <div class="info-row">
+                                <strong>Result period</strong>
+                                <span>{{ data.period_start }} to {{ data.period_end }}</span>
+                            </div>
+                            <div class="info-row">
+                                <strong>Indicator result counts</strong>
+                                <span>
+                                    {% for indicator in data.indicator_counts %}
+                                        {{ indicator.label }}: {{ indicator.usable }} usable
+                                        {% if indicator.unusable %}
+                                            <span style="color: var(--error-text)">
+                                                + {{ indicator.unusable }} unusable
+                                            </span>
+                                        {% endif %}
+                                        result(s)
+                                        {% if not loop.last %}<br/> {% endif %}
+                                    {% endfor %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if data %}
+                <h2 style="margin-bottom: 15px;">Aggregated results to be uploaded</h2>
+                {% macro data_table(id, data, highlight_observation_count=False) -%}
+                    <table id="{{ id }}">
+                      <thead>
+                        <tr>
+                          <th>Indicator</th>
+                          <th>Period</th>
+                          <th>Period Start</th>
+                          <th>Period End</th>
+                          <th>Average Value</th>
+                          <th>Observation Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for result in data %}
+                        <tr>
+                          <td>{{ result.indicator }}</td>
+                          <td>{{ result.aggregation_period }}</td>
+                          <td data-type="date" data-format="ISO_8601">{{ result.period_start[:10] }}</td>
+                          <td data-type="date" data-format="ISO_8601">{{ result.period_end[:10] }}</td>
+                          <td>{{ "%.6f"|format(result.average_value) }}</td>
+                          <td style="{% if highlight_observation_count %} color: var(--error-text); background: var(--error-bg); {% endif %}">
+                              {{ result.observation_count }}
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                    <script type="module">
+                        import {DataTable} from "/static/SimpleDataTables.js"
+                        new DataTable("#{{ id }}", {
+                            perPage: 10,
+                            perPageSelect: [10, 25, 50, 100, 500, 1000]
+                        })
+                    </script>
+                {%- endmacro %}
+                {{ data_table("usable-result-table", data.usable_results) }}
+                <div class="action-buttons">
+                    <button class="btn-confirm" id="confirmBtn" onclick="confirmUpload()">
+                        <div class="spinner" style="margin-right: 20px"></div>
+                        <div class="label">Confirm and Upload</div>
+                        <div class="busy-label">Processing</div>
+                    </button>
+                    <button class="btn-reject" id="rejectBtn" onclick="rejectUpload()">
+                        Reject
+                    </button>
+                </div>
+
+                {% if data.unusable_results %}
+                    <h2 style="margin-bottom: 15px;">Aggregated results that cannot be uploaded</h2>
+                    <div id="statusMessage" class="status-message error" style="text-align: left;">
+                        <p>Some results cannot be uploaded due to unsatisfied privacy or anonymity criteria:</p>
+                        <ul>
+                            <li>Some results have been computed based on the clinical data of a small number of patients. For a time period with a small number of patients, there is a risk of re-identification of the anonymous data.</li>
+                        </ul>
+                        <p>Pressing the "Confirm and Upload" button will upload only the results listed under "Aggregated results to be uploaded", not the results listed below.</p>
+                    </div>
+                    {{ data_table("unusable-result-table", data.unusable_results, highlight_observation_count=True) }}
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

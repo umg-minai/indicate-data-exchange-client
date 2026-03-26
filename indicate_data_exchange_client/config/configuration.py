@@ -28,13 +28,20 @@ class Configuration(BaseModel):
 
     # Data Exchange
     data_exchange_endpoint: str = Field(..., description="URL for the data exchange endpoint")
+    observation_count_threshold: int = Field(5,
+                                             ge=0,
+                                             description="""
+                                                         The minimum number of observations (patients) on which a \
+                                                         quality indicator result has to be based to be transmitted \
+                                                         to the hub.
+                                                         """)
 
-    # Trigger
-    trigger_address: str = Field("", description="Address to listen on for HTTP trigger requests")
-    trigger_port: int = Field(8080,
-                              ge=0,
-                              le=65535,
-                              description="Port to listen on for HTTP trigger requests")
+    # Listening endpoint
+    listen_address: str = Field("", description="Address to listen on for HTTP requests (for both, trigger and review")
+    listen_port: int = Field(8080,
+                             ge=0,
+                             le=65535,
+                             description="Port to listen on for HTTP requests (for both, trigger and review)")
 
 
 def load_configuration(config_file: str = ".env") -> Configuration:
@@ -75,9 +82,9 @@ def load_configuration(config_file: str = ".env") -> Configuration:
 
     maybe_from_env("provider_id", "PROVIDER_ID")
     maybe_from_env("data_exchange_endpoint", "DATA_EXCHANGE_ENDPOINT")
+    maybe_from_env("observation_count_threshold", "OBSERVATION_COUNT_THRESHOLD")
 
-    maybe_from_env("trigger_address", "TRIGGER_ADDRESS")
-    maybe_from_env("trigger_port", "TRIGGER_PORT", int)
+    maybe_from_env("listen_address", "LISTEN_ADDRESS")
+    maybe_from_env("listen_port", "LISTEN_PORT", int)
 
     return Configuration(**args)
-

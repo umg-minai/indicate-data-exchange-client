@@ -26,6 +26,7 @@ RUN pip install /tmp/indicate_data_exchange_api_client-1.0.0-py3-none-any.whl
 
 COPY requirements.txt              /app/
 COPY indicate_data_exchange_client /app/indicate_data_exchange_client
+COPY static                        /app/static
 
 WORKDIR /app
 
@@ -33,9 +34,9 @@ RUN pip install --root-user-action=ignore -r requirements.txt
 
 ENV PYTHONPATH=.
 
-ENV TRIGGER_ADDRESS=0.0.0.0
-ENV TRIGGER_PORT=8080
+ENV LISTEN_ADDRESS=0.0.0.0
+ENV LISTEN_PORT=8080
 
-EXPOSE ${TRIGGER_PORT}
+EXPOSE ${LISTEN_PORT}
 
 CMD ["python3", "indicate_data_exchange_client/main.py"]
