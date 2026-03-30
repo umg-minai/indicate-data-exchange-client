@@ -85,20 +85,33 @@ def review_page(configuration: Configuration, state: State):
         # Transform the results into dict objects for use in
         # templates. Collect some statistics that will also be
         # displayed by the templates along the way.
-        meta_data = state.meta_data
         data = None
         if state.results is not None:
             results = state.results
+            # Populate indicator information dictionary from meta
+            # data, if available.
+            indicator_infos = {}
+            meta_data = state.meta_data
+            if meta_data is not None:
+                for indicator_info in meta_data.info:
+                    indicator_id = indicator_info.indicator_id
+                    title = indicator_info.title
+                    indicator_infos[indicator_id] = {"usable": 0, "unusable": 0, "title": title}
+            # Put results into rows of usable results and unsuable
+            # results. Include the quality indicator title as label,
+            # if available. Also track overall temporal period from
+            # which results have been computed and result counts for
+            # each quality indicator.
             period_start, period_end = None, None
-            indicator_counts = {}
             usable_rows, unusable_rows = [], []
             def transform_results(results, into, is_usable=True):
                 nonlocal period_start, period_end
                 for result in results:
                     indicator_id = result.indicator_id
-                    info = meta_data.lookup(indicator_id) if meta_data is not None else None
-                    title = info.title if info is not None else None
-                    label = title if title is not None else str(indicator_id)
+                    info = indicator_infos.get(indicator_id, { "usable": 0, "unusable": 0 })
+                    indicator_infos[indicator_id] = info
+
+                    label = info["title"] if "title" in info else str(indicator_id)
                     result_start = result.period_start
                     result_end = result.period_end
                     into.append({
@@ -109,22 +122,21 @@ def review_page(configuration: Configuration, state: State):
                         "average_value":      float(result.average_value),
                         "observation_count":  result.observation_count,
                     })
-                    counts = indicator_counts.get(label, [0, 0])
-                    indicator_counts[label] = counts
+
                     if is_usable:
                         period_start = min(period_start, result_start) if period_start is not None else result_start
                         period_end = max(period_end, result_end) if period_end is not None else result_end
-                        counts[0] += 1
+                        info["usable"] += 1
                     else:
-                        counts[1] += 1
+                        info["unusable"] += 1
             transform_results(results.usable_results, usable_rows)
             transform_results(results.unusable_results, unusable_rows, is_usable=False)
             data = {
                 "computed_at":      results.computed_at,
                 "period_start":     period_start,
                 "period_end":       period_end,
-                "indicator_counts": [ {"label": label, "usable": counts[0], "unusable": counts[1] }
-                                      for label, counts in indicator_counts.items()],
+                "indicator_counts": [ { "id": indicator_id, **info }
+                                      for indicator_id, info in indicator_infos.items()],
                 "usable_results":   usable_rows,
                 "unusable_results": unusable_rows,
             }

@@ -21,6 +21,8 @@
             {% else %}
                 <div id="statusMessage" class="status-message success">
                     No results are queued for review and upload. The next execution of the CQL engine will produce and queue new results.
+                    <br/>
+                    Once the CQL engine finishes, reload this page to review the new results.
                 </div>
             {% endif %}
 
@@ -54,16 +56,30 @@
                             <div class="info-row">
                                 <strong>Indicator result counts</strong>
                                 <span>
-                                    {% for indicator in data.indicator_counts %}
-                                        {{ indicator.label }}: {{ indicator.usable }} usable
-                                        {% if indicator.unusable %}
-                                            <span style="color: var(--error-text)">
-                                                + {{ indicator.unusable }} unusable
-                                            </span>
-                                        {% endif %}
-                                        result(s)
-                                        {% if not loop.last %}<br/> {% endif %}
-                                    {% endfor %}
+                                    <table>
+                                        {% for indicator in data.indicator_counts %}
+                                            <tr>
+                                                <td>
+                                                    {% if indicator.title %}
+                                                        {{ indicator.title }}
+                                                    {% else %}
+                                                        {{ indicator.id }}
+                                                        <span style="color: var(--error-text);" error>(failed to look up QI info)</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {{ indicator.usable }} usable
+                                                    {% if indicator.unusable %}
+                                                        <span style="color: var(--error-text)">
+                                                            + {{ indicator.unusable }} unusable
+                                                        </span>
+                                                    {% endif %}
+                                                    result(s)
+                                                    {% if not loop.last %}<br/> {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
                                 </span>
                             </div>
                         </div>
