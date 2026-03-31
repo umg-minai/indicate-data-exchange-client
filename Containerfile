@@ -19,6 +19,11 @@ RUN cp dist/indicate_data_exchange_api_client-1.0.0-py3-none-any.whl \
 
 FROM python:3.13-slim-trixie
 
+RUN DEBIAN_FRONTEND=noninteractive apt-get update                  \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
+         curl                                                      \
+    && apt-get clean
+
 COPY --from=client-library                                   \
        /indicate_data_exchange_api_client-1.0.0-py3-none-any.whl \
        /tmp
@@ -40,3 +45,6 @@ ENV LISTEN_PORT=8080
 EXPOSE ${LISTEN_PORT}
 
 CMD ["python3", "indicate_data_exchange_client/main.py"]
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:${LISTEN_PORT}/review
