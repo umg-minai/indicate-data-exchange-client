@@ -1,6 +1,8 @@
+ARG API_VERSION=1.1.0
+
 FROM python:3.13-slim-trixie AS client-library
 
-ARG API_VERSION=1.1.0
+ARG API_VERSION
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update                  \
     && DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
@@ -20,6 +22,8 @@ RUN cp dist/indicate_data_exchange_api_client-${API_VERSION}-py3-none-any.whl \
        /indicate_data_exchange_api_client-${API_VERSION}-py3-none-any.whl
 
 FROM python:3.13-slim-trixie
+
+ARG API_VERSION
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update                  \
     && DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
