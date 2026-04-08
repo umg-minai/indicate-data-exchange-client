@@ -2,7 +2,7 @@ name: publish-container-image
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, image-version ]
 
 env:
   IMAGE_NAME: ${{ github.repository }}
