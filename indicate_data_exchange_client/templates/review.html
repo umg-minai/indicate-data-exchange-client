@@ -55,32 +55,30 @@
                             </div>
                             <div class="info-row">
                                 <strong>Indicator result counts</strong>
-                                <span>
-                                    <table>
-                                        {% for indicator in data.indicator_counts %}
-                                            <tr>
-                                                <td>
-                                                    {% if indicator.title %}
-                                                        {{ indicator.title }}
-                                                    {% else %}
-                                                        {{ indicator.id }}
-                                                        <span style="color: var(--error-text);" error>(failed to look up QI info)</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    {{ indicator.usable }} usable
-                                                    {% if indicator.unusable %}
-                                                        <span style="color: var(--error-text)">
-                                                            + {{ indicator.unusable }} unusable
-                                                        </span>
-                                                    {% endif %}
-                                                    result(s)
-                                                    {% if not loop.last %}<br/> {% endif %}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </table>
-                                </span>
+                                <table>
+                                    {% for indicator in data.indicator_counts %}
+                                        <tr>
+                                            <td>
+                                                {% if indicator.title %}
+                                                    {{ indicator.title }}
+                                                {% else %}
+                                                    {{ indicator.id }}
+                                                    <span style="color: var(--error-text);">(failed to look up QI info)</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ indicator.usable }} usable
+                                                {% if indicator.unusable %}
+                                                    <span style="color: var(--error-text)">
+                                                        + {{ indicator.unusable }} unusable
+                                                    </span>
+                                                {% endif %}
+                                                result(s)
+                                                {% if not loop.last %}<br/> {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -127,9 +125,9 @@
                 {{ data_table("usable-result-table", data.usable_results) }}
                 <div class="action-buttons">
                     <button class="btn-confirm" id="confirmBtn" onclick="confirmUpload()">
-                        <div class="spinner" style="margin-right: 20px"></div>
-                        <div class="label">Confirm and Upload</div>
-                        <div class="busy-label">Processing</div>
+                        <span class="spinner" style="margin-right: 20px"></span>
+                        <span class="label">Confirm and Upload</span>
+                        <span class="busy-label">Processing</span>
                     </button>
                     <button class="btn-reject" id="rejectBtn" onclick="rejectUpload()">
                         Reject
@@ -138,7 +136,7 @@
 
                 {% if data.unusable_results %}
                     <h2 style="margin-bottom: 15px;">Aggregated results that cannot be uploaded</h2>
-                    <div id="statusMessage" class="status-message error" style="text-align: left;">
+                    <div class="status-message error" style="text-align: left;">
                         <p>Some results cannot be uploaded due to unsatisfied privacy or anonymity criteria:</p>
                         <ul>
                             <li>Some results have been computed based on the clinical data of a small number of patients. For a time period with a small number of patients, there is a risk of re-identification of the anonymous data.</li>
