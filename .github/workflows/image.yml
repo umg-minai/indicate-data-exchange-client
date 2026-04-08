@@ -6,7 +6,6 @@ on:
 
 env:
   IMAGE_NAME: ${{ github.repository }}
-  VERSION: ${{ steps.get_version.outputs.version }}
 
 jobs:
   build-and-publish:
@@ -21,15 +20,14 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Get Python package version
-        id: get_version
         run: |
           VERSION=$(cat indicate_data_exchange_client/__init__.py | sed -Ee 's/__version__ *= *(.*) */\1/')
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "PACKAGE_VERSION=${VERSION}" >> "${GITHUB_ENV}"
 
       - name: Build the Docker image
         run: |
-          docker build -t ghcr.io/${{ env.IMAGE_NAME }}:${{ env.VERSION }} -f Containerfile .
-          docker tag -t ghcr.io/${{ env.IMAGE_NAME }}:${{ env.VERSION }} ghcr.io/${{ env.IMAGE_NAME }}:latest
+          docker build -t ghcr.io/${{ env.IMAGE_NAME }}:${PACKAGE_VERSION} -f Containerfile .
+          docker tag -t ghcr.io/${{ env.IMAGE_NAME }}:${PACKAGE_VERSION} ghcr.io/${{ env.IMAGE_NAME }}:latest
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -40,5 +38,5 @@ jobs:
 
       - name: Push the Docker image
         run: |
-          docker push ghcr.io/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+          docker push ghcr.io/${{ env.IMAGE_NAME }}:${PACKAGE_VERSION}
           docker push ghcr.io/${{ env.IMAGE_NAME }}:latest
