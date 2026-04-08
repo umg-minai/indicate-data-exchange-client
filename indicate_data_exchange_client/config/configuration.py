@@ -2,6 +2,7 @@ import os
 import re
 from typing import Optional
 
+import indicate_data_exchange_api_client.hub as hub
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
@@ -27,7 +28,8 @@ class Configuration(BaseModel):
                              description="Unique identifier for the data provider")
 
     # Data Exchange
-    data_exchange_endpoint: str = Field(..., description="URL for the data exchange endpoint")
+    data_exchange: hub.Configuration = Field(..., description="Configuration for the data exchange endpoint.")
+
     observation_count_threshold: int = Field(5,
                                              ge=0,
                                              description="""
@@ -81,7 +83,13 @@ def load_configuration(config_file: str = ".env") -> Configuration:
     maybe_from_env(("database", "dbschema"), "DATABASE_SCHEMA")
 
     maybe_from_env("provider_id", "PROVIDER_ID")
-    maybe_from_env("data_exchange_endpoint", "DATA_EXCHANGE_ENDPOINT")
+
+    maybe_from_env(("data_exchange", "endpoint"), "DATA_EXCHANGE_ENDPOINT")
+    maybe_from_env(("data_exchange", "tenant_id"), "DATA_EXCHANGE_TENANT_ID")
+    maybe_from_env(("data_exchange", "sp_client_id"), "DATA_EXCHANGE_SP_CLIENT_ID")
+    maybe_from_env(("data_exchange", "sp_client_secret"), "DATA_EXCHANGE_SP_CLIENT_SECRET")
+    maybe_from_env(("data_exchange", "apim_app_id"), "DATA_EXCHANGE_APIM_APP_ID")
+
     maybe_from_env("observation_count_threshold", "OBSERVATION_COUNT_THRESHOLD")
 
     maybe_from_env("listen_address", "LISTEN_ADDRESS")

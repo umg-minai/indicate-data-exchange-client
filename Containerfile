@@ -1,4 +1,8 @@
+ARG API_VERSION=1.1.0
+
 FROM python:3.13-slim-trixie AS client-library
+
+ARG API_VERSION
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update                  \
     && DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
@@ -14,20 +18,22 @@ RUN . .venv/bin/activate && pip install -r requirements.txt && pip install build
 
 RUN . .venv/bin/activate && python3 -m build
 
-RUN cp dist/indicate_data_exchange_api_client-1.0.0-py3-none-any.whl \
-       /indicate_data_exchange_api_client-1.0.0-py3-none-any.whl
+RUN cp dist/indicate_data_exchange_api_client-${API_VERSION}-py3-none-any.whl \
+       /indicate_data_exchange_api_client-${API_VERSION}-py3-none-any.whl
 
 FROM python:3.13-slim-trixie
+
+ARG API_VERSION
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update                  \
     && DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
          curl                                                      \
     && apt-get clean
 
-COPY --from=client-library                                   \
-       /indicate_data_exchange_api_client-1.0.0-py3-none-any.whl \
+COPY --from=client-library                                       \
+       /indicate_data_exchange_api_client-${API_VERSION}-py3-none-any.whl \
        /tmp
-RUN pip install /tmp/indicate_data_exchange_api_client-1.0.0-py3-none-any.whl
+RUN pip install /tmp/indicate_data_exchange_api_client-${API_VERSION}-py3-none-any.whl
 
 COPY requirements.txt              /app/
 COPY indicate_data_exchange_client /app/indicate_data_exchange_client

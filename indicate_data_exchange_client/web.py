@@ -147,7 +147,7 @@ def review_page(configuration: Configuration, state: State):
                 "review.html",
                 context={
                     "provider_id":            configuration.provider_id,
-                    "data_exchange_endpoint": configuration.data_exchange_endpoint,
+                    "data_exchange_endpoint": configuration.data_exchange.endpoint,
                     "data":                   data,
                 }
             ).body
