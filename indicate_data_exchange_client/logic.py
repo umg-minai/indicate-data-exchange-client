@@ -3,8 +3,8 @@ import logging
 from typing import Optional, Literal, cast
 
 import indicate_data_exchange_api_client
-from indicate_data_exchange_api_client import AggregationPeriodKind, ApiClient, \
-    DefaultApi, ProviderResultsPostRequest, ApiException
+from indicate_data_exchange_api_client import AggregationPeriodKind, ProviderResultsPostRequest, ApiException
+from indicate_data_exchange_api_client.hub import Hub, AzureHub
 
 from indicate_data_exchange_client.config.configuration import Configuration
 from indicate_data_exchange_client.db import database
@@ -14,30 +14,27 @@ from indicate_data_exchange_client.model import AggregatedQualityIndicatorResult
 logger = logging.getLogger("logic")
 
 
-def fetch_meta_data(configuration):
+def fetch_meta_data(configuration: Configuration, hub: Hub):
     """
     Fetch meta-data for all quality indicators.
 
     The main reason for fetching this data is to display quality indicator \
     names instead of ids to users.
     """
-    logger.info(f"Fetching quality indicator meta-data from {configuration.data_exchange_endpoint}")
-    api_configuration = indicate_data_exchange_api_client.configuration.Configuration(host=configuration.data_exchange_endpoint)
-    with ApiClient(api_configuration) as api_client:
-        api_instance = DefaultApi(api_client)
-        try:
-            result = api_instance.indicator_info_get()
-            logger.info(f"Successfully fetched meta-data for {len(result)} indicator(s)")
-            return QualityIndicatorMetaData(
-                info=[ QualityIndicatorInfo(indicator_id=info.concept_id, title=info.title)
-                       for info in result ]
-            )
-        except ApiException as e:
-            logger.error(f"Failed to fetch meta-data for quality indicators: {e}")
-            raise e
+    logger.info(f"Fetching quality indicator meta-data from {configuration.data_exchange.endpoint}")
+    try:
+        result = hub.indicator_info()
+        logger.info(f"Successfully fetched meta-data for {len(result)} indicator(s)")
+        return QualityIndicatorMetaData(
+            info=[ QualityIndicatorInfo(indicator_id=info.concept_id, title=info.title)
+                   for info in result ]
+        )
+    except ApiException as e:
+        logger.error(f"Failed to fetch meta-data for quality indicators: {e}")
+        raise e
 
 
-def collect_aggregated_results(configuration):
+def collect_aggregated_results(configuration: Configuration):
     """Retrieve aggregated quality indicator results from the database."""
     usable_results, unusable_results = [], []
     with database.transaction(configuration.database) as session:
@@ -72,9 +69,9 @@ def collect_aggregated_results(configuration):
         unusable_results=unusable_results)
 
 
-def transmit_aggregated_results(configuration: Configuration, results: AggregatedQualityIndicatorResults):
+def transmit_aggregated_results(configuration: Configuration, hub: Hub, results: AggregatedQualityIndicatorResults):
     """Submit aggregated quality indicator results to the data exchange server."""
-    logger.info(f"Submitting aggregated data to {configuration.data_exchange_endpoint}")
+    logger.info(f"Submitting aggregated data to {configuration.data_exchange.endpoint}")
 
     results_for_api = [
         indicate_data_exchange_api_client.AggregatedQualityIndicatorResult(
@@ -86,20 +83,17 @@ def transmit_aggregated_results(configuration: Configuration, results: Aggregate
         )
         for result in results.usable_results
     ]
-    api_configuration = indicate_data_exchange_api_client.configuration.Configuration(host=configuration.data_exchange_endpoint)
-    with ApiClient(api_configuration) as api_client:
-        api_instance = DefaultApi(api_client)
-        payload = ProviderResultsPostRequest(
-            provider_id=configuration.provider_id,
-            results=results_for_api
-        )
-        try:
-            api_instance.provider_results_post(payload)
-            logger.info("Successfully submitted aggregated data")
-            return True
-        except ApiException as e:
-            logger.error(f"Failed to submit aggregated data: {e}")
-            raise e
+    payload = ProviderResultsPostRequest(
+        provider_id=configuration.provider_id,
+        results=results_for_api
+    )
+    try:
+        hub.provider_results(payload)
+        logger.info("Successfully submitted aggregated data")
+        return True
+    except ApiException as e:
+        logger.error(f"Failed to submit aggregated data: {e}")
+        raise e
 
 
 class State:
@@ -107,6 +101,7 @@ class State:
 
     def __init__(self, configuration: Configuration):
         self.configuration = configuration
+        self._hub = Hub.from_configuration(configuration.data_exchange)
         self._meta_data: Optional[dict] = None
         self.results: Optional[AggregatedQualityIndicatorResults] = None
 
@@ -114,7 +109,7 @@ class State:
     def meta_data(self):
         if self._meta_data is None:
             try:
-                self._meta_data = fetch_meta_data(self.configuration)
+                self._meta_data = fetch_meta_data(self.configuration, self._hub)
             except Exception as e:
                 logger.error(f"Failed to fetch quality indicator meta data: {e}")
         return self._meta_data
@@ -125,7 +120,7 @@ class State:
     def transmit_results(self):
         if self.results is None:
             raise ValueError("No results to transmit")
-        transmit_aggregated_results(self.configuration, self.results)
+        transmit_aggregated_results(self.configuration, self._hub, self.results)
         self.results = None
 
     def clear_results(self):
