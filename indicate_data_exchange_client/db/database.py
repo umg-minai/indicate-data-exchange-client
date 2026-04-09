@@ -2,7 +2,6 @@ import sys
 from contextlib import contextmanager
 from typing import List, Literal
 
-import logging
 import sqlalchemy
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,20 +11,16 @@ from indicate_data_exchange_client.db.model import WeeklyQualityIndicatorResults
     MonthlyQualityIndicatorResults, YearlyQualityIndicatorResults
 
 
-logger = logging.getLogger("main")
-
-
 @contextmanager
 def transaction(configuration: DatabaseConfiguration):
-    def construct_database_url(host=configuration.host,
-                               port=configuration.port,
-                               database=configuration.database,
-                               user=configuration.user,
-                               password=configuration.password):
-        return f"postgresql://{user}:{password}@{host}:{str(port)}/{database}"
-    database_url = construct_database_url()
-    logger.info(f"Connecting to database at {construct_database_url(password='*'*len(configuration.password))}")
-    sys.stdout.flush()
+    database_url = sqlalchemy.engine.url.URL.create(
+        drivername="postgresql",
+        username=configuration.user,
+        password=configuration.password,
+        host=configuration.host,
+        port=configuration.port,
+        database=configuration.database,
+    )
     engine = sqlalchemy.create_engine(database_url)
     with Session(engine) as session:
         yield session
