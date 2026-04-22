@@ -101,6 +101,10 @@ class State:
 
     def __init__(self, configuration: Configuration):
         self.configuration = configuration
+        # Copy data provider ID into data exchange configuration so
+        # that communication with the INDICATE hub can include the ID
+        # in the provenance headers of sent requests.
+        self.configuration.data_exchange.site_id = self.configuration.provider_id
         self._hub = Hub.from_configuration(configuration.data_exchange)
         self._meta_data: Optional[dict] = None
         self.results: Optional[AggregatedQualityIndicatorResults] = None
