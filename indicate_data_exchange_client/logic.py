@@ -118,10 +118,10 @@ class State:
                 logger.error(f"Failed to fetch quality indicator meta data: {e}")
         return self._meta_data
 
-    def fetch_results(self):
+    def fetch_results_from_database(self):
         self.results = collect_aggregated_results(self.configuration)
 
-    def transmit_results(self):
+    def transmit_results_tp_hub(self):
         if self.results is None:
             raise ValueError("No results to transmit")
         transmit_aggregated_results(self.configuration, self._hub, self.results)

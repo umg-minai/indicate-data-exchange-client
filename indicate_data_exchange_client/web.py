@@ -23,7 +23,7 @@ def trigger(state: State):
     async def trigger_closure(request: Request):
         """Trigger the collection of results for review."""
         try:
-            state.fetch_results()
+            state.fetch_results_from_database()
             return JSONResponse({
                 "success": True,
                 "message": "Results fetched successfully"
@@ -48,7 +48,7 @@ def confirm_upload(state: State):
             )
         else:
             try:
-                state.transmit_results()
+                state.transmit_results_tp_hub()
                 return JSONResponse({
                     "success": True,
                     "message": "Results uploaded successfully"

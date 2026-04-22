@@ -12,15 +12,10 @@ class AggregatedQualityIndicatorResults:
     __table_args__ = {"schema": SCHEMA}
 
     observation_id: Mapped[int] = mapped_column(primary_key=True)
-
     observation_concept_id: Mapped[int]
-
     period_start: Mapped[datetime] = mapped_column(TIMESTAMP)
-
     period_end: Mapped[datetime] = mapped_column(TIMESTAMP)
-
     average_value: Mapped[float] = mapped_column(NUMERIC)
-
     observation_count: Mapped[int]
 
 class DailyQualityIndicatorResults(Base, AggregatedQualityIndicatorResults):
