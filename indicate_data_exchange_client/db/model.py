@@ -29,3 +29,13 @@ class MonthlyQualityIndicatorResults(Base, AggregatedQualityIndicatorResults):
 
 class YearlyQualityIndicatorResults(Base, AggregatedQualityIndicatorResults):
     __tablename__ = "quality_indicator_yearly_average"
+
+class Observations(Base):
+    __tablename__ = "observation"
+    __table_args__ = {"schema": SCHEMA}
+
+    observation_id: Mapped[int] = mapped_column(primary_key=True)
+
+    observation_concept_id: Mapped[int]
+
+    observation_datetime: Mapped[datetime] = mapped_column(TIMESTAMP)

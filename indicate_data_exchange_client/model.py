@@ -44,6 +44,10 @@ class AggregatedQualityIndicatorResults(BaseModel):
 
     Separated into usable (e.g. results that can be uploaded) and unusable results.
     """
+    profile_id: str = "benchmark-profile-v1.2" # TODO: fix this once it is clear how this is should be computed/configured
+
+    pipeline_run_id: str
+
     computed_at: datetime
 
     usable_results: List[AggregatedQualityIndicatorResult]

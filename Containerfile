@@ -1,4 +1,4 @@
-ARG API_VERSION=1.3.0
+ARG API_VERSION=1.4.0
 
 FROM python:3.13-slim-trixie AS client-library
 

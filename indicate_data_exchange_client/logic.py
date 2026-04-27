@@ -1,10 +1,12 @@
+import copy
 import datetime
 import logging
+import uuid
 from typing import Optional, Literal, cast
 
 import indicate_data_exchange_api_client
 from indicate_data_exchange_api_client import AggregationPeriodKind, ProviderResultsPostRequest, ApiException
-from indicate_data_exchange_api_client.hub import Hub, AzureHub
+from indicate_data_exchange_api_client.hub import Hub
 
 from indicate_data_exchange_client.config.configuration import Configuration
 from indicate_data_exchange_client.db import database
@@ -36,8 +38,10 @@ def fetch_meta_data(configuration: Configuration, hub: Hub):
 
 def collect_aggregated_results(configuration: Configuration):
     """Retrieve aggregated quality indicator results from the database."""
+    most_recent_marker = None
     usable_results, unusable_results = [], []
     with database.transaction(configuration.database) as session:
+        most_recent_marker = database.read_run_marker(session)
         for period_kind in [
             AggregationPeriodKind.WEEKLY,
             AggregationPeriodKind.MONTHLY,
@@ -63,7 +67,9 @@ def collect_aggregated_results(configuration: Configuration):
                     unusable_results.append(internal_result)
                     unusable_count += 1
             logger.info(f"Collected {usable_count} usable result(s) and {unusable_count} unusable result(s) for {period_name} aggregation")
+    pipeline_run_id = uuid.uuid5(uuid.NAMESPACE_DNS, most_recent_marker.isoformat())
     return AggregatedQualityIndicatorResults(
+        pipeline_run_id=str(pipeline_run_id),
         computed_at=datetime.datetime.now(),
         usable_results=usable_results,
         unusable_results=unusable_results)
@@ -124,7 +130,11 @@ class State:
     def transmit_results_tp_hub(self):
         if self.results is None:
             raise ValueError("No results to transmit")
-        transmit_aggregated_results(self.configuration, self._hub, self.results)
+        hub_configuration = copy.copy(self.configuration.data_exchange)
+        hub_configuration.profile_id = self.results.profile_id
+        hub_configuration.pipeline_run_id = self.results.pipeline_run_id
+        hub = Hub.from_configuration(hub_configuration)
+        transmit_aggregated_results(self.configuration, hub, self.results)
         self.results = None
 
     def clear_results(self):
